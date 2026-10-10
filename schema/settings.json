@@ -307,6 +307,15 @@
         "window:zoom": {
           "type": "number"
         },
+        "window:popupsenabled": {
+          "type": "boolean"
+        },
+        "window:popupallowedorigins": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
         "telemetry:*": {
           "type": "boolean"
         },

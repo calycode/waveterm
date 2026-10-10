@@ -30,6 +30,7 @@ import (
 	"github.com/wavetermdev/waveterm/pkg/waveappstore"
 	"github.com/wavetermdev/waveterm/pkg/wavebase"
 	"github.com/wavetermdev/waveterm/pkg/waveobj"
+	"github.com/wavetermdev/waveterm/pkg/wconfig"
 	"github.com/wavetermdev/waveterm/pkg/web/sse"
 	"github.com/wavetermdev/waveterm/pkg/wps"
 	"github.com/wavetermdev/waveterm/pkg/wstore"
@@ -106,6 +107,12 @@ func getWaveAISettings(premium bool, builderMode bool, rtInfo waveobj.ObjRTInfo,
 		return nil, fmt.Errorf("no ai:endpoint configured for AI mode %s", aiMode)
 	}
 
+	if len(config.Headers) > 0 {
+		if err := wconfig.ValidateAIHeaders(config.Headers); err != nil {
+			return nil, fmt.Errorf("AI mode %s: %w", aiMode, err)
+		}
+	}
+
 	thinkingLevel := config.ThinkingLevel
 	if thinkingLevel == "" {
 		thinkingLevel = uctypes.ThinkingLevelMedium
@@ -126,6 +133,7 @@ func getWaveAISettings(premium bool, builderMode bool, rtInfo waveobj.ObjRTInfo,
 		ProxyURL:      config.ProxyURL,
 		Capabilities:  config.Capabilities,
 		WaveAIPremium: config.WaveAIPremium,
+		Headers:       config.Headers,
 	}
 	if apiToken != "" {
 		opts.APIToken = apiToken

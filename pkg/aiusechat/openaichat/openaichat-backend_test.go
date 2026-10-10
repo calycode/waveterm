@@ -4,6 +4,7 @@
 package openaichat
 
 import (
+	"context"
 	"encoding/json"
 	"strings"
 	"testing"
@@ -157,5 +158,52 @@ func TestExtractPartialTextMessageEmpty(t *testing.T) {
 	msg := extractPartialTextMessage("msg-3", "", "")
 	if msg != nil {
 		t.Fatal("expected nil when both text and reasoning are empty")
+	}
+}
+
+func TestBuildChatHTTPRequestAppliesCustomHeaders(t *testing.T) {
+	chatOpts := uctypes.WaveChatOpts{
+		Config: uctypes.AIOptsType{
+			Provider: uctypes.AIProvider_Custom,
+			APIType:  uctypes.APIType_OpenAIChat,
+			Model:    "deepseek-v4.1-flash",
+			Endpoint: "https://opencode.ai/zen/go/v1/chat/completions",
+			APIToken: "test-token",
+			Headers:  map[string]string{"x-opencode-session": "wave-local-static-session"},
+		},
+	}
+
+	req, err := buildChatHTTPRequest(context.Background(), nil, chatOpts)
+	if err != nil {
+		t.Fatalf("buildChatHTTPRequest failed: %v", err)
+	}
+
+	if got := req.Header.Get("x-opencode-session"); got != "wave-local-static-session" {
+		t.Errorf("x-opencode-session: got %q, want %q", got, "wave-local-static-session")
+	}
+	if got := req.Header.Get("Authorization"); got != "Bearer test-token" {
+		t.Errorf("Authorization: got %q, want %q", got, "Bearer test-token")
+	}
+}
+
+func TestBuildChatHTTPRequestCannotOverrideAuthorization(t *testing.T) {
+	chatOpts := uctypes.WaveChatOpts{
+		Config: uctypes.AIOptsType{
+			Provider: uctypes.AIProvider_Custom,
+			APIType:  uctypes.APIType_OpenAIChat,
+			Model:    "some-model",
+			Endpoint: "https://example.com/v1/chat/completions",
+			APIToken: "test-token",
+			Headers:  map[string]string{"Authorization": "Bearer evil"},
+		},
+	}
+
+	req, err := buildChatHTTPRequest(context.Background(), nil, chatOpts)
+	if err != nil {
+		t.Fatalf("buildChatHTTPRequest failed: %v", err)
+	}
+
+	if got := req.Header.Get("Authorization"); got != "Bearer test-token" {
+		t.Errorf("Authorization was overridden: got %q", got)
 	}
 }

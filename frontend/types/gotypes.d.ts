@@ -33,6 +33,7 @@ declare global {
         "ai:azuredeployment"?: string;
         "ai:capabilities"?: string[];
         "ai:switchcompat"?: string[];
+        "ai:headers"?: {[key: string]: string};
         "waveai:cloud"?: boolean;
         "waveai:premium"?: boolean;
     };
@@ -1469,6 +1470,8 @@ declare global {
         "window:savelastwindow"?: boolean;
         "window:dimensions"?: string;
         "window:zoom"?: number;
+        "window:popupsenabled"?: boolean;
+        "window:popupallowedorigins"?: string[];
         "telemetry:*"?: boolean;
         "telemetry:enabled"?: boolean;
         "conn:*"?: boolean;
@@ -1589,6 +1592,7 @@ declare global {
         "debug:panictype"?: string;
         "block:view"?: string;
         "block:controller"?: string;
+        "block:subblock"?: boolean;
         "ai:backendtype"?: string;
         "ai:local"?: boolean;
         "wsh:cmd"?: string;

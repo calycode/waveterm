@@ -32,6 +32,10 @@ export type ConfigFile = {
 
 export const SecretNameRegex = /^[A-Za-z][A-Za-z0-9_]*$/;
 
+const ProtectedAIHeaders = new Set(["authorization", "cookie", "set-cookie"]);
+const HttpTokenRegex = /^[!#$%&'*+\-.^_`|~0-9A-Za-z]+$/;
+const MaxAIHeaders = 16;
+
 function validateAiJson(parsed: any): ValidationResult {
     const keys = Object.keys(parsed);
     for (const key of keys) {
@@ -51,8 +55,44 @@ function validateWaveAiJson(parsed: any): ValidationResult {
                 error: `Invalid key "${key}": keys must only contain letters, numbers, underscores, @, dots, and hyphens`,
             };
         }
+        const mode = parsed[key];
+        if (mode != null && typeof mode === "object") {
+            const headerError = validateAiHeaders(mode["ai:headers"]);
+            if (headerError) {
+                return { error: `${headerError} (mode "${key}")` };
+            }
+        }
     }
     return { success: true };
+}
+
+function validateAiHeaders(headers: any): string | null {
+    if (headers == null) {
+        return null;
+    }
+    if (typeof headers !== "object" || Array.isArray(headers)) {
+        return `"ai:headers" must be an object of header name to value`;
+    }
+    const names = Object.keys(headers);
+    if (names.length > MaxAIHeaders) {
+        return `"ai:headers" has too many entries (${names.length}), maximum is ${MaxAIHeaders}`;
+    }
+    for (const name of names) {
+        const value = headers[name];
+        if (!HttpTokenRegex.test(name)) {
+            return `Invalid header name "${name}" in "ai:headers"`;
+        }
+        if (ProtectedAIHeaders.has(name.toLowerCase())) {
+            return `Header "${name}" is reserved and cannot be set in "ai:headers"`;
+        }
+        if (typeof value !== "string" || value === "") {
+            return `Header "${name}" must have a non-empty string value`;
+        }
+        if (/[\r\n]/.test(value)) {
+            return `Header "${name}" value must not contain CR or LF`;
+        }
+    }
+    return null;
 }
 
 function makeConfigFiles(isWindows: boolean): ConfigFile[] {

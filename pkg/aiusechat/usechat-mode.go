@@ -312,6 +312,7 @@ func ComputeResolvedAIModeConfigs(fullConfig wconfig.FullConfigType) map[string]
 	for modeName, modeConfig := range fullConfig.WaveAIModes {
 		resolved := modeConfig
 		applyProviderDefaults(&resolved)
+		resolved.Headers = nil
 		resolvedConfigs[modeName] = resolved
 	}
 

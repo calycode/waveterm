@@ -20,6 +20,28 @@ import {
     shNavHandler,
 } from "./emain-util";
 import { ElectronWshClient } from "./emain-wsh";
+import { evaluatePopupPolicy, normalizeOrigin, type PopupPolicy } from "./popup-policy";
+
+const SandboxedPopupWindowOptions = {
+    width: 1000,
+    height: 800,
+    autoHideMenuBar: true,
+    webPreferences: {
+        contextIsolation: true,
+        sandbox: true,
+        nodeIntegration: false,
+        webSecurity: true,
+    },
+};
+
+function getPopupPolicy(fullConfig: FullConfigType): PopupPolicy {
+    const settings = fullConfig?.settings;
+    return {
+        enabled: settings?.["window:popupsenabled"] ?? false,
+        allowedOrigins: settings?.["window:popupallowedorigins"] ?? [],
+        askForUnknown: false,
+    };
+}
 
 function handleWindowsMenuAccelerators(
     waveEvent: WaveKeyboardEvent,
@@ -315,12 +337,35 @@ export async function getOrCreateWebViewForTab(waveWindowId: string, tabId: stri
     tabView.webContents.on("will-navigate", shNavHandler);
     tabView.webContents.on("will-frame-navigate", shFrameNavHandler);
     tabView.webContents.on("did-attach-webview", (event, wc) => {
+        const policy = getPopupPolicy(fullConfig);
         wc.setWindowOpenHandler((details) => {
             if (wc == null || wc.isDestroyed() || tabView.webContents == null || tabView.webContents.isDestroyed()) {
                 return { action: "deny" };
             }
-            tabView.webContents.send("webview-new-window", wc.id, details);
-            return { action: "deny" };
+            if (!policy.enabled) {
+                tabView.webContents.send("webview-new-window", wc.id, details);
+                return { action: "deny" };
+            }
+            if (evaluatePopupPolicy(details.url, policy) !== "allow") {
+                return { action: "deny" };
+            }
+            const popupOrigin = normalizeOrigin(details.url);
+            return {
+                action: "allow",
+                overrideBrowserWindowOptions: {
+                    ...SandboxedPopupWindowOptions,
+                    title: popupOrigin ?? "Popup",
+                },
+            };
+        });
+        wc.on("did-create-window", (window, details) => {
+            const popupOrigin = normalizeOrigin(details.url);
+            window.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
+            window.webContents.on("will-navigate", (navEvent, url) => {
+                if (popupOrigin == null || normalizeOrigin(url) !== popupOrigin) {
+                    navEvent.preventDefault();
+                }
+            });
         });
     });
     tabView.webContents.on("before-input-event", (e, input) => {

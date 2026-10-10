@@ -317,6 +317,8 @@ func buildOpenAIHTTPRequest(ctx context.Context, inputs []any, chatOpts uctypes.
 		req.Header.Set("X-Wave-RequestType", chatOpts.GetWaveRequestType())
 	}
 
+	opts.ApplyHeaders(req)
+
 	return req, nil
 }
 

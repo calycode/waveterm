@@ -173,6 +173,8 @@ func buildGeminiHTTPRequest(ctx context.Context, contents []GeminiContent, chatO
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("x-goog-api-key", opts.APIToken)
 
+	opts.ApplyHeaders(req)
+
 	return req, nil
 }
 

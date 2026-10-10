@@ -95,6 +95,12 @@
           },
           "type": "array"
         },
+        "ai:headers": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "type": "object"
+        },
         "waveai:cloud": {
           "type": "boolean"
         },

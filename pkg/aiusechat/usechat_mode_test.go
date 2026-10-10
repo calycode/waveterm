@@ -37,3 +37,30 @@ func TestApplyProviderDefaultsKeepsProxyURL(t *testing.T) {
 		t.Fatalf("expected proxy URL to be preserved, got %q", config.ProxyURL)
 	}
 }
+
+func TestComputeResolvedAIModeConfigsStripsHeaders(t *testing.T) {
+	fullConfig := wconfig.FullConfigType{
+		WaveAIModes: map[string]wconfig.AIModeConfigType{
+			"opencode-deepseek-flash": {
+				DisplayName: "DeepSeek V4.1 Flash",
+				Provider:    uctypes.AIProvider_Custom,
+				APIType:     uctypes.APIType_OpenAIChat,
+				Model:       "deepseek-v4.1-flash",
+				Headers:     map[string]string{"x-opencode-session": "secret-value"},
+			},
+		},
+	}
+
+	resolved := ComputeResolvedAIModeConfigs(fullConfig)
+
+	cfg, ok := resolved["opencode-deepseek-flash"]
+	if !ok {
+		t.Fatal("expected mode to be resolved")
+	}
+	if len(cfg.Headers) != 0 {
+		t.Errorf("expected headers to be stripped from broadcast config, got %v", cfg.Headers)
+	}
+	if cfg.Model != "deepseek-v4.1-flash" {
+		t.Errorf("expected other fields preserved, got model %q", cfg.Model)
+	}
+}

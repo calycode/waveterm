@@ -430,6 +430,34 @@ When using providers like `openai` or `openrouter`, the secret name is automatic
 
 The `openai` provider automatically looks for the `OPENAI_KEY` secret. See the [Secrets documentation](./secrets.mdx) for more information on managing secrets securely in Wave.
 
+## Custom HTTP Headers
+
+Some providers require extra request headers (for example a session id). Use `ai:headers` to send a fixed set of headers with every request from a mode:
+
+```json
+{
+  "opencode-deepseek-flash": {
+    "display:name": "DeepSeek V4.1 Flash",
+    "ai:provider": "custom",
+    "ai:apitype": "openai-chat",
+    "ai:model": "deepseek-v4.1-flash",
+    "ai:endpoint": "https://opencode.ai/zen/go/v1/chat/completions",
+    "ai:apitokensecretname": "OPENCODE_GO_KEY",
+    "ai:capabilities": ["tools"],
+    "ai:headers": {
+      "x-opencode-session": "wave-local-static-session"
+    }
+  }
+}
+```
+
+Rules:
+
+- Up to 16 headers per mode. Names must be valid HTTP header names and values must be non-empty.
+- Values may not contain CR or LF.
+- `authorization`, `cookie`, and `set-cookie` are reserved. Wave's own token mechanism (`ai:apitoken` / `ai:apitokensecretname`) is the only way to set credentials, so `ai:headers` can never override authentication.
+- Header values are never sent to the Wave frontend or included in configuration exports.
+
 ## Multiple Modes Example
 
 You can define multiple AI modes and switch between them easily:
@@ -543,6 +571,7 @@ If you get "model not found" errors:
 | `ai:azureresourcename` | No | Azure resource name (for Azure providers) |
 | `ai:azuredeployment` | No | Azure deployment name (for `azure-legacy` provider) |
 | `ai:capabilities` | No | Array of supported capabilities: `"tools"`, `"images"`, `"pdfs"` |
+| `ai:headers` | No | Object of extra HTTP headers to send with every request (e.g. `{"x-opencode-session": "wave-local-static-session"}`). See [Custom HTTP Headers](#custom-http-headers). |
 | `waveai:cloud` | No | Internal - for Wave Cloud AI configuration only |
 | `waveai:premium` | No | Internal - for Wave Cloud AI configuration only |
 

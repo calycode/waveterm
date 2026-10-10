@@ -184,6 +184,8 @@ func buildAnthropicHTTPRequest(ctx context.Context, msgs []anthropicInputMessage
 		req.Header.Set("X-Wave-RequestType", chatOpts.GetWaveRequestType())
 	}
 
+	opts.ApplyHeaders(req)
+
 	return req, nil
 }
 

@@ -5,6 +5,7 @@ package uctypes
 
 import (
 	"fmt"
+	"net/http"
 	"net/url"
 	"slices"
 	"strings"
@@ -267,6 +268,27 @@ type AIOptsType struct {
 	AIMode        string   `json:"aimode,omitempty"`
 	Capabilities  []string `json:"capabilities,omitempty"`
 	WaveAIPremium bool     `json:"waveaipremium,omitempty"`
+	Headers       map[string]string `json:"headers,omitempty"`
+}
+
+// protectedHeaders are reserved for Wave's own credential mechanism. Even if a
+// user-configured header slips past validation, ApplyHeaders refuses to set
+// these so a custom mode can never hijack authentication.
+var protectedHeaders = map[string]bool{
+	"authorization": true,
+	"cookie":        true,
+	"set-cookie":    true,
+}
+
+// ApplyHeaders sets the mode's configured custom headers on the request. It is
+// applied last (after Wave's own headers) and skips protected headers.
+func (opts AIOptsType) ApplyHeaders(req *http.Request) {
+	for name, value := range opts.Headers {
+		if protectedHeaders[strings.ToLower(name)] {
+			continue
+		}
+		req.Header.Set(name, value)
+	}
 }
 
 func (opts AIOptsType) IsWaveProxy() bool {
